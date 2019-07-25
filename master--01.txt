@@ -1,0 +1,98 @@
+/**
+     * 3.8 注销确认
+     * @param req
+     * @return
+     */
+    @Override
+    public RouteBaseResponse cancellation(CancellationReq req) {
+
+        try{
+            HnReqMessageNew<CancellationReq> req2 = new HnReqMessageNew<>();
+            ReqHeadNew reqHead = getReqHead("","4047");
+            req2.setHead(reqHead);
+            req2.setBody(new CancellationReq()
+                    .setListNo("外部流水号")  //外部流水号
+                    .setFaceCardNum("190213220661")  //16位卡号
+                    .setSerialNumber("4301190213220661")  //obu序列号
+            );
+            String xml1 = XmlUtil.toXml(req2);
+            log.info("3.8 注销确认xml："+xml1);
+
+            String info = iDataServerProxy.request(xml1);
+            HnRespMessageNew resp = new HnRespMessageNew<>();
+            resp = (HnRespMessageNew<?>) XmlUtil.parseObject(info, resp.getClass());
+            RespHeadNew respHead = resp.getHead();
+            String statusCode = respHead.getStatusCode();
+            log.info("注销确认返回请求头：" + respHead);
+            if("0000".equals(statusCode)){
+
+            }else{
+
+            }
+        }catch (Exception e){
+            log.error(e.getMessage(),e.fillInStackTrace());
+        }
+        return null;
+    }
+	
+	
+/**
+     * 3.9 订单取消
+     * @param req
+     * @return
+     */
+    @Override
+    public OrderCancelResponse orderCancel(OrderCancelRequest req) {
+        OrderCancelResponse resp = new OrderCancelResponse();
+
+        OrderQueryRequest request = new OrderQueryRequest();
+        request.setOrderNo(req.getOrderNo()); //订单号
+        request.setOwnerCode("4301");
+        OrderQueryResponse response = etcCoreIssueNoticeApi.orderQuery(request);
+        if(1 == response.getCode()){
+            resp.setCode(1);
+            resp.setMsg("统一网关不存在该订单");
+            return resp;
+        }
+
+        Order order = response.getOrder();
+        Integer orderStatus =order.getOrderStatus();
+        if(!"9".equals(orderStatus.toString()) && !"10".equals(orderStatus.toString())){
+            resp.setCode(0);
+            resp.setMsg("不通知华软直接取消");
+            return resp;
+        }
+
+        try{
+            HnReqMessageNew<OrderCancelReq> req2 = new HnReqMessageNew<>();
+            ReqHeadNew reqHead = getReqHead(order.getNote1(),"4048");
+            req2.setHead(reqHead);
+            req2.setBody(new OrderCancelReq()
+                    .setListNo(req.getOrderNo()) //外部流水号（订单号）
+            );
+            String xml1 = XmlUtil.toXml(req2);
+            log.info("3.9 订单取消xml："+xml1);
+
+            String info = iDataServerProxy.request(xml1);
+
+            Map<String, Object> xml2map = XmlUtil.xml2map(info);
+            String jsonStr = JSONObject.toJSONString(xml2map);
+            JSONObject parseObject = JSONObject.parseObject(jsonStr);
+            Map header =(Map)parseObject.get("Header");
+
+            log.info("3.9 订单取消返回header：" + header);
+            String statusCode = (String)header.get("StatusCode");
+            String description = (String)header.get("Description");
+            if("0000".equals(statusCode)){
+                resp.setCode(0);
+            }else{
+                resp.setCode(1);
+            }
+            resp.setMsg(description);
+        }catch (Exception e){
+            log.error(e.getMessage(),e.fillInStackTrace());
+            resp.setCode(1); //系统异常
+            resp.setMsg("3.9 订单取消全局异常："+e.getLocalizedMessage());
+        }
+        return resp;
+    }

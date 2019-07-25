@@ -6,6 +6,7 @@
     @Override
     public RouteBaseResponse cancellation(CancellationReq req) {
 
+		sout("================")
         try{
             HnReqMessageNew<CancellationReq> req2 = new HnReqMessageNew<>();
             ReqHeadNew reqHead = getReqHead("","4047");
@@ -17,6 +18,7 @@
             );
             String xml1 = XmlUtil.toXml(req2);
             log.info("3.8 注销确认xml："+xml1);
+			sount("=======================")
 
             String info = iDataServerProxy.request(xml1);
             HnRespMessageNew resp = new HnRespMessageNew<>();

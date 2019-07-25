@@ -45,6 +45,7 @@
     public OrderCancelResponse orderCancel(OrderCancelRequest req) {
         OrderCancelResponse resp = new OrderCancelResponse();
 
+		sout("====================")
         OrderQueryRequest request = new OrderQueryRequest();
         request.setOrderNo(req.getOrderNo()); //订单号
         request.setOwnerCode("4301");
@@ -54,6 +55,7 @@
             resp.setMsg("统一网关不存在该订单");
             return resp;
         }
+		sout("-------------------------")
 
         Order order = response.getOrder();
         Integer orderStatus =order.getOrderStatus();
